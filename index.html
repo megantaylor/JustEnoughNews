@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>JustEnoughNews</title>
+  <meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0; user-scalable=no" />
+  <link href="style.css" rel="stylesheet" type="text/css" media="all"/>
+</head>
+
+<body>
+  <div class="wrap">
+    <header>
+    	<div class="logo">
+    		<a href="index.html">
+    			<img src="images/logo.png" alt="logo by mobifreaks"/>
+    			<span class="title"><span>JustEnough</span>News</span>
+    		</a>
+    	</div>   
+    </header>
+    <div class="content">
+    		<section class="head">
+<form onsubmit="calcCommute();return false" style="margin-top:15px;">
+                <p><input type="text" id="inputCurrentAddress" placeholder="Current Address"></p>
+				<p><a href="" onclick="lookupLocation();return false">Geolocate</a></p>
+				<p><input type="text" id="inputDestinationAddress" placeholder="Destination Address"></p>
+				<p><input type="text" id="keyword" placeholder="Keyword ex:cats"></p>
+				<p><input type="submit" value="Get News"></p>
+ </form>
+ 
+			</section>
+			<section id="directionsPanel"></section>
+    </div>
+    <footer>
+
+    </footer>
+  </div>
+      <script type="text/javascript" src="js/geoPosition.js"></script>
+    <script type="text/javascript"
+src="http://maps.googleapis.com/maps/api/js?v=3&key=AIzaSyAufQG3-_yBGqDKE7dTf53zpqkhUKC8tao&sensor=true"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+<script>
+var geocoder;
+var currentAddress = "";
+var destinationAddress = "";
+var directionsService = new google.maps.DirectionsService();
+var directionsDisplay = new google.maps.DirectionsRenderer();
+directionsDisplay.setPanel(document.getElementById("directionsPanel"));
+
+
+
+
+function lookupLocation() {
+	if(geoPosition.init()){  // Geolocation Initialisation
+            geoPosition.getCurrentPosition(geoSuccess,geoError,{enableHighAccuracy:true});
+    }else{
+            alert('You cannot use geolocation on this device.'); // You cannot use Geolocation in this device
+    }
+    //geoPositionSimulator.init(); 
+}
+function geoSuccess(p) {
+  var latlng = new google.maps.LatLng(p.coords.latitude, p.coords.longitude);
+  geocoder = new google.maps.Geocoder();
+  geocoder.geocode({'latLng': latlng}, function(results, status) {
+    if (status == google.maps.GeocoderStatus.OK) {
+      if (results[1]) {
+	    currentAddress = results[1].formatted_address;
+	   	var currentAddressText =  $('<p>From ' + results[1].formatted_address + '</p>');
+ 		$("#directionsPanel").append(currentAddressText);
+      } else {
+        alert('No results found');
+      }
+    } else {
+      alert('Geocoder failed due to: ' + status);
+    }
+	});
+}
+
+function geoError() {
+  alert('Unable to determine your location.');
+}
+
+function calcCommute() {
+	if (currentAddress.length == 0) {
+		currentAddress = $("#inputCurrentAddress").val();
+		var currentAddressText =  $('<p>From ' + currentAddress + '</p>');
+ 		$("#directionsPanel").append(currentAddressText);
+	}
+	destinationAddress = $("#inputDestinationAddress").val();
+		var destinationAddressText =  $('<p>To ' + destinationAddress + '</p>');
+ 		$("#directionsPanel").append(destinationAddressText);
+	var directionsRequest = {
+		origin: currentAddress,
+		destination: destinationAddress,
+		travelMode: google.maps.DirectionsTravelMode.TRANSIT,
+		unitSystem: google.maps.UnitSystem.IMPERIAL
+	};
+
+	directionsService.route(
+  directionsRequest,
+  function(response, status)
+  {
+    if (status == google.maps.DirectionsStatus.OK)
+    {
+      var travelTime = $('<p>Travel time: ' + response.routes[0].legs[0].duration.text + '</p>');
+	  $("#directionsPanel").append(travelTime);
+	  getNews();
+
+    }
+    else
+      $("#error").append("Unable to retrieve your route<br />");
+  }
+);
+}
+
+function getNews() {
+	var keyword = $("#keyword").val();
+	var url = "http://api.nytimes.com/svc/search/v2/articlesearch.jsonp?q=" + keyword + "&api-key=540ac6f50285fc4f21c36c23c70b7d1e:16:43101054&callback=svc_search_v2_articlesearch";
+	
+    $.ajax({
+        type: "GET",
+        contentType: "application/json; charset=utf-8",
+        // submit a get request to the restful service mktDetail.
+        url: url,
+        dataType: 'jsonp',
+		jsonp: true,
+        jsonp: 'callback',
+        jsonpCallback: 'svc_search_v2_articlesearch',
+        success: function(data) {
+			//searchResultsHandler(data);
+			console.log(data);
+		},
+		error : function(err, req) {
+			console.log("Your browser broke!");
+		}    
+		
+		});
+}
+
+
+</script>
+</body>
+</html>
